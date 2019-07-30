@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="JMathTeX-0.7pre">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/JMathTeX-0.7pre.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
