@@ -1,0 +1,222 @@
+[[model]]
+author: Cellml converter
+desc: """
+    b'Luo-Rudy Mammalian Ventricular Model I 1991'
+    b'Catherine'
+    b'Lloyd'
+    b'Auckland Bioengineering Institute, The University of Auckland'
+    b'Model
+    Status'
+    b'This model has been curated and unit checked and is known to
+    replicate the published results in OpenCell and COR.'
+    b'Model Structure'
+    b'In 1991, Ching-hsing Luo and Yoram Rudy published a mathematical model of
+    the ventricular cardiac action potential.  This original model is the first
+    of the two Luo-Rudy models, and it has subsequently come to be known as the
+    Luo-Rudy I model.  It is a significant update of the Beeler-Reuter
+    mammalian ventricular model (1977) (see the figure below), and like the the
+    Beeler-Reuter model, the Luo-Rudy I model uses Hodgkin-Huxley type
+    equations to calculate ionic currents.'
+    b'The complete original paper
+    reference is cited below:'
+    b'A Model of the Ventricular Cardiac Action
+    Potential - Depolarisation, Repolarisation and Their Interaction, Ching-
+    hsing Luo and Yoram Rudy, 1991'
+    b'Circulation Research'
+    b', 68, 1501-1526.'
+    b'PubMed ID: 1709839'
+    b'cell diagram of the LR-I model showing ionic
+    currents, pumps and exchangers within the sarcolemma'
+    b'A schematic diagram
+    describing the current flows across the cell membrane that are captured in
+    the LR-I model.'
+    """
+name: luo_rudy_1991
+# Initial values
+membrane.V                                = -8.43801107370999972e1
+fast_sodium_current_m_gate.m              =  1.71338077730188000e-3
+fast_sodium_current_h_gate.h              =  9.82660523699655952e-1
+fast_sodium_current_j_gate.j              =  9.89108212766685035e-1
+slow_inward_current_d_gate.d              =  3.02126301779860997e-3
+slow_inward_current_f_gate.f              =  9.99967936476324981e-1
+time_dependent_potassium_current_X_gate.X =  4.17603108167287004e-2
+intracellular_calcium_concentration.Cai   =  1.79488163883060009e-4
+
+[background_current]
+E_b = -59.87
+    in [mV]
+g_b = 0.03921
+    in [mS/cm^2]
+i_b = g_b * (membrane.V - E_b)
+    in [uA/cm^2]
+
+[environment]
+time = 0 bind time
+    in [ms]
+
+[fast_sodium_current]
+E_Na = membrane.R * membrane.T / membrane.F * log(ionic_concentrations.Nao / ionic_concentrations.Nai)
+    in [mV]
+g_Na = 23
+    in [mS/cm^2]
+i_Na = g_Na * fast_sodium_current_m_gate.m ^ 3 * fast_sodium_current_h_gate.h * fast_sodium_current_j_gate.j * (membrane.V - E_Na)
+    in [uA/cm^2]
+
+[fast_sodium_current_h_gate]
+alpha_h = piecewise(membrane.V < -40 [mV], 0.135 [mS/uF] * exp((80 [mV] + membrane.V) / -6.8 [mV]), 0 [mS/uF])
+    in [mS/uF]
+beta_h = piecewise(membrane.V < -40 [mV], 3.56 [mS/uF] * exp(0.079 [1/mV] * membrane.V) + 310000 [mS/uF] * exp(0.35 [1/mV] * membrane.V), 1 / (0.13 [ms] * (1 + exp((membrane.V + 10.66 [mV]) / -11.1 [mV]))))
+    in [mS/uF]
+dot(h) = alpha_h * (1 - h) - beta_h * h
+    in [1]
+
+[fast_sodium_current_j_gate]
+alpha_j = piecewise(membrane.V < -40 [mV], (-127140 [1/mV/ms] * exp(0.2444 [1/mV] * membrane.V) - 3.474e-5 [1/mV/ms] * exp(-0.04391 [1/mV] * membrane.V)) * (membrane.V + 37.78 [mV]) / (1 + exp(0.311 [1/mV] * (membrane.V + 79.23 [mV]))), 0 [mS/uF])
+    in [mS/uF]
+beta_j = piecewise(membrane.V < -40 [mV], 0.1212 [mS/uF] * exp(-0.01052 [1/mV] * membrane.V) / (1 + exp(-0.1378 [1/mV] * (membrane.V + 40.14 [mV]))), 0.3 [mS/uF] * exp(-2.535e-7 [1/mV] * membrane.V) / (1 + exp(-0.1 [1/mV] * (membrane.V + 32 [mV]))))
+    in [mS/uF]
+dot(j) = alpha_j * (1 - j) - beta_j * j
+    in [1]
+
+[fast_sodium_current_m_gate]
+alpha_m = 0.32 [1/mV/ms] * (membrane.V + 47.13 [mV]) / (1 - exp(-0.1 [1/mV] * (membrane.V + 47.13 [mV])))
+    in [mS/uF]
+beta_m = 0.08 [mS/uF] * exp(-membrane.V / 11 [mV])
+    in [mS/uF]
+dot(m) = alpha_m * (1 - m) - beta_m * m
+    in [1]
+
+[intracellular_calcium_concentration]
+dot(Cai) = -0.0001 [1/m (100000)] / 1 [C/mol] * slow_inward_current.i_si + 0.07 [mS/uF] * (0.0001 [mM] - Cai)
+    in [mM]
+
+[ionic_concentrations]
+Ki = 145
+    in [mM]
+Ko = 5.4
+    in [mM]
+Nai = 18
+    in [mM]
+Nao = 140
+    in [mM]
+
+[membrane]
+C = 1
+    in [uF/cm^2]
+F = 96484.6
+    in [C/mol]
+I_stim = piecewise(environment.time >= stim_start and environment.time <= stim_end and environment.time - stim_start - floor((environment.time - stim_start) / stim_period) * stim_period <= stim_duration, stim_amplitude, 0 [uA/cm^2])
+    in [uA/cm^2]
+R = 8314
+    in [mJ/mol/K]
+T = 310
+    in [K]
+dot(V) = -1 / C * (I_stim + fast_sodium_current.i_Na + slow_inward_current.i_si + time_dependent_potassium_current.i_K + time_independent_potassium_current.i_K1 + plateau_potassium_current.i_Kp + background_current.i_b)
+    in [mV]
+stim_amplitude = -25.5
+    in [uA/cm^2]
+stim_duration = 2
+    in [ms]
+stim_end = 9000
+    in [ms]
+stim_period = 1000
+    in [ms]
+stim_start = 100
+    in [ms]
+
+[plateau_potassium_current]
+E_Kp = time_independent_potassium_current.E_K1
+    in [mV]
+Kp = 1 / (1 + exp((7.488 [mV] - membrane.V) / 5.98 [mV]))
+    in [1]
+g_Kp = 0.0183
+    in [mS/cm^2]
+i_Kp = g_Kp * Kp * (membrane.V - E_Kp)
+    in [uA/cm^2]
+
+[slow_inward_current]
+E_si = 7.7 [mV] - 13.0287 [mV] * log(intracellular_calcium_concentration.Cai / 1 [mM])
+    in [mV]
+i_si = 0.09 [mS/cm^2] * slow_inward_current_d_gate.d * slow_inward_current_f_gate.f * (membrane.V - E_si)
+    in [uA/cm^2]
+
+[slow_inward_current_d_gate]
+alpha_d = 0.095 [mS/uF] * exp(-0.01 [1/mV] * (membrane.V - 5 [mV])) / (1 + exp(-0.072 [1/mV] * (membrane.V - 5 [mV])))
+    in [mS/uF]
+beta_d = 0.07 [mS/uF] * exp(-0.017 [1/mV] * (membrane.V + 44 [mV])) / (1 + exp(0.05 [1/mV] * (membrane.V + 44 [mV])))
+    in [mS/uF]
+dot(d) = alpha_d * (1 - d) - beta_d * d
+    in [1]
+
+[slow_inward_current_f_gate]
+alpha_f = 0.012 [mS/uF] * exp(-0.008 [1/mV] * (membrane.V + 28 [mV])) / (1 + exp(0.15 [1/mV] * (membrane.V + 28 [mV])))
+    in [mS/uF]
+beta_f = 0.0065 [mS/uF] * exp(-0.02 [1/mV] * (membrane.V + 30 [mV])) / (1 + exp(-0.2 [1/mV] * (membrane.V + 30 [mV])))
+    in [mS/uF]
+dot(f) = alpha_f * (1 - f) - beta_f * f
+    in [1]
+
+[time_dependent_potassium_current]
+E_K = membrane.R * membrane.T / membrane.F * log((ionic_concentrations.Ko + PR_NaK * ionic_concentrations.Nao) / (ionic_concentrations.Ki + PR_NaK * ionic_concentrations.Nai))
+    in [mV]
+PR_NaK = 0.01833
+    in [1]
+g_K = 0.282 [mS/cm^2] * sqrt(ionic_concentrations.Ko / 5.4 [mM])
+    in [mS/cm^2]
+i_K = g_K * time_dependent_potassium_current_X_gate.X * time_dependent_potassium_current_Xi_gate.Xi * (membrane.V - E_K)
+    in [uA/cm^2]
+
+[time_dependent_potassium_current_X_gate]
+dot(X) = alpha_X * (1 - X) - beta_X * X
+    in [1]
+alpha_X = 0.0005 [mS/uF] * exp(0.083 [1/mV] * (membrane.V + 50 [mV])) / (1 + exp(0.057 [1/mV] * (membrane.V + 50 [mV])))
+    in [mS/uF]
+beta_X = 0.0013 [mS/uF] * exp(-0.06 [1/mV] * (membrane.V + 20 [mV])) / (1 + exp(-0.04 [1/mV] * (membrane.V + 20 [mV])))
+    in [mS/uF]
+
+[time_dependent_potassium_current_Xi_gate]
+Xi = piecewise(membrane.V > -100 [mV], 2.837 [mV] * (exp(0.04 [1/mV] * (membrane.V + 77 [mV])) - 1) / ((membrane.V + 77 [mV]) * exp(0.04 [1/mV] * (membrane.V + 35 [mV]))), 1)
+    in [1]
+
+[time_independent_potassium_current]
+E_K1 = membrane.R * membrane.T / membrane.F * log(ionic_concentrations.Ko / ionic_concentrations.Ki)
+    in [mV]
+g_K1 = 0.6047 [mS/cm^2] * sqrt(ionic_concentrations.Ko / 5.4 [mM])
+    in [mS/cm^2]
+i_K1 = g_K1 * time_independent_potassium_current_K1_gate.K1_infinity * (membrane.V - E_K1)
+    in [uA/cm^2]
+
+[time_independent_potassium_current_K1_gate]
+K1_infinity = alpha_K1 / (alpha_K1 + beta_K1)
+    in [1]
+alpha_K1 = 1.02 [mS/uF] / (1 + exp(0.2385 [1/mV] * (membrane.V - time_independent_potassium_current.E_K1 - 59.215 [mV])))
+    in [mS/uF]
+beta_K1 = (0.49124 [mS/uF] * exp(0.08032 [1/mV] * (membrane.V + 5.476 [mV] - time_independent_potassium_current.E_K1)) + 1 [mS/uF] * exp(0.06175 [1/mV] * (membrane.V - (time_independent_potassium_current.E_K1 + 594.31 [mV])))) / (1 + exp(-0.5143 [1/mV] * (membrane.V - time_independent_potassium_current.E_K1 + 4.753 [mV])))
+    in [mS/uF]
+
+[[protocol]]
+# Level  Start    Length   Period   Multiplier
+1.0      100.0    0.5      1000000.0   0
+
+[[script]]
+import matplotlib.pyplot as plt
+import myokit
+
+# Get model and protocol, create simulation
+m = get_model()
+p = get_protocol()
+s = myokit.Simulation(m, p)
+
+# Run simulation
+d = s.run(1000)
+
+# Get the first state variable's name
+first_state = next(m.states)
+var = first_state.qname()
+
+# Display the results
+plt.figure()
+plt.plot(d.time(), d[var])
+plt.title(var)
+plt.show()
+
