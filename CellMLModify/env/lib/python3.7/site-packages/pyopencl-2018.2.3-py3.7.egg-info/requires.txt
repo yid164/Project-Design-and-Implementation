@@ -1,0 +1,5 @@
+numpy
+pytools>=2017.6
+decorator>=3.2.0
+appdirs>=1.4.0
+six>=1.9.0
